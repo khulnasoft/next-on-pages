@@ -1,0 +1,30 @@
+{
+	"features": [
+		"simpleAppApiRoutes",
+		"simpleAppSsrRoutes",
+		"simpleAppStaticRoutesAndAssets",
+		"appMiddleware",
+		"appRouting",
+		"appRoutingSsrDynamicCatchAll",
+		"appConfigsTrailingSlashFalse",
+		"appConfigsRewritesRedirectsHeaders",
+		"appWasm",
+		"appServerActions",
+		"appGetRequestContext",
+		"customEntrypoint"
+	],
+	"localSetup": "./setup.sh",
+	"buildConfig": {
+		"buildCommand": "npx --force ../../../packages/next-on-pages --custom-entrypoint=./custom-entrypoint.ts",
+		"buildOutputDirectory": ".vercel/output/static"
+	},
+	"deploymentConfig": {
+		"compatibilityFlags": ["nodejs_compat"],
+		"kvNamespaces": {
+			"MY_KV": {
+				"production": { "id": "00000000000000000000000000000000" },
+				"staging": { "id": "00000000000000000000000000000000" }
+			}
+		}
+	}
+}

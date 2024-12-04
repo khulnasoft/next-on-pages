@@ -1,0 +1,23 @@
+{
+	"features": [
+		"simpleAppApiRoutes",
+		"appRouting",
+		"appConfigsTrailingSlashTrue",
+		"appWasm",
+		"appGetRequestContext"
+	],
+	"localSetup": "npm install",
+	"buildConfig": {
+		"buildCommand": "npx --force ../../../packages/next-on-pages",
+		"buildOutputDirectory": ".vercel/output/static"
+	},
+	"deploymentConfig": {
+		"compatibilityFlags": ["nodejs_compat"],
+		"kvNamespaces": {
+			"MY_KV": {
+				"production": {"id": "00000000000000000000000000000000"},
+				"staging": {"id": "00000000000000000000000000000000"}
+			}
+		}
+	}
+}

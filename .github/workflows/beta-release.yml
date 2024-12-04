@@ -1,0 +1,38 @@
+name: Beta Release
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    if: ${{ github.repository_owner == 'khulnasoft' }}
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: ./.github/actions/node-setup
+
+      - name: Modify package.json version
+        run: node .github/version-script.js BETA
+
+      - name: Build
+        run: npm run build
+
+      - name: Publish next-on-pages Beta to NPM
+        working-directory: ./packages/next-on-pages
+        run: npm publish --tag beta
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish eslint-plugin-next-on-pages Beta to NPM
+        working-directory: ./packages/eslint-plugin-next-on-pages
+        run: npm publish --tag beta
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

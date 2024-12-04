@@ -1,0 +1,66 @@
+name: Pull request checks
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+# This allows a subsequently queued workflow run to interrupt previous runs
+concurrency:
+  group: '${{ github.workflow }} @ ${{ github.event.pull_request.head.label || github.head_ref || github.ref }}'
+  cancel-in-progress: true
+
+jobs:
+  simple-checks:
+    strategy:
+      matrix:
+        check:
+          [
+            { name: formatting, script: 'prettier:check' },
+            { name: linting, script: lint },
+            { name: type checking, script: types-check },
+            { name: building, script: build },
+            { name: unit testing, script: 'test:unit' },
+          ]
+    name: ${{ matrix.check.name }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: ./.github/actions/node-setup
+
+      - name: Cache Turbo
+        uses: ./.github/actions/cache-turbo
+        with:
+          script: ${{ matrix.check.script }}
+
+      - name: Run Script
+        run: npm run ${{ matrix.check.script }} -- --cache-dir ./turbo-cache
+  e2e-tests:
+    name: e2e tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: ./.github/actions/node-setup
+        with:
+          # the e2es have continuous issues with node modules, it seems to be
+          # related to caching (probably because the various fixtures run `npm i`
+          # themselves), so for the time being we skip node modules caching here
+          skip-caching: true
+
+      - name: Run e2e tests
+        uses: nick-fields/retry@v2
+        with:
+          max_attempts: 3
+          timeout_minutes: 10
+          command: rm -rf ./pages-e2e/test-workspaces ./pages-e2e/workspaces && npm run test:e2e -- -- --log-timestamp
+        env:
+          KHULNASOFT_API_TOKEN: ${{ secrets.KHULNASOFT_API_TOKEN }}
+          KHULNASOFT_ACCOUNT_ID: ${{ vars.KHULNASOFT_ACCOUNT_ID }}
+          PROJECT_NAME: ${{ vars.PROJECT_NAME }}

@@ -1,0 +1,5 @@
+{
+	"name": "@khulnasoft/next-on-pages-tsconfig",
+	"private": true,
+	"description": "Shared tsconfig for next-on-pages packages"
+}

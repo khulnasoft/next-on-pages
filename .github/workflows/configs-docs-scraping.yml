@@ -1,0 +1,47 @@
+name: Configs docs scraping
+on:
+  schedule:
+    - cron: '0 0,12 * * *'
+
+jobs:
+  scrape_docs:
+    if: ${{ github.repository_owner == 'khulnasoft' }}
+    name: Scrape docs and create/update issue if needed
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: ./.github/actions/node-setup
+        with:
+          # puppeteer doesn't store browsers in the node modules but in its own directory
+          # (see: https://pptr.dev/troubleshooting#could-not-find-expected-browser-locally)
+          # instead of adding this directory in the node-setup caching (and make all the caches
+          # heavier) let's just skip caching here (since it also doesn't make a different
+          # how long this workflow takes)
+          skip-caching: true
+
+      - name: Run Checker
+        id: run-checker
+        working-directory: internal-packages/docs-scraper
+        run: GH_ACTION=true npm run check-docs
+
+      - name: Generate table
+        id: generate-table
+        if: steps.run-checker.outputs.result == 'out-of-date'
+        working-directory: internal-packages/docs-scraper
+        run: GH_ACTION=true npm run generate-configs-table
+
+      - name: Create or update issue
+        if: steps.run-checker.outputs.result == 'out-of-date'
+        working-directory: internal-packages/docs-scraper
+        run: |
+          export GH_ACTION=true
+          export GH_TOKEN="${{ secrets.GITHUB_TOKEN }}"
+          export undocumentedNextConfigs="${{ steps.run-checker.outputs.undocumented_next_configs }}"
+          export documentedNonNextConfigs="${{ steps.run-checker.outputs.documented_non_next_configs }}"
+          export configsTable="${{ steps.generate-table.outputs.table }}"
+          npm run create-or-update-issue

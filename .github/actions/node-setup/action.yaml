@@ -1,0 +1,40 @@
+name: Node Setup
+description: Sets up Node with the required node_modules
+inputs:
+  skip-caching:
+    description: whether the node modules caching should be skipped (defaults to false)
+    required: false
+    default: false
+runs:
+  using: composite
+  steps:
+    - name: Setup Node.js 20.10.0
+      uses: actions/setup-node@v3
+      with:
+        node-version: 20.10.0
+
+    - name: Get current node version
+      id: node-version
+      shell: bash
+      run: |
+        node_version=$(node -v)
+        echo "node_version=$node_version" >> $GITHUB_OUTPUT
+
+      # Attempt to cache all the node_modules directories based on the node version and package lock.
+    - name: Cache node_modules
+      id: npm-cache
+      if: ${{ inputs.skip-caching != 'true' }}
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-node-modules-${{ steps.node-version.outputs.node_version }}
+      with:
+        key: ${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+        path: |
+          **/node_modules
+          !/pages-e2e/workspaces/**/node_modules
+
+    # If the cache missed then install using `npm ci` to follow package lock exactly
+    - if: ${{ steps.npm-cache.outputs.cache-hit != 'true'}}
+      name: Install NPM Dependencies
+      shell: bash
+      run: npm ci
